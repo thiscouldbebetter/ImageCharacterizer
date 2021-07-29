@@ -1,0 +1,50 @@
+<html>
+<body>
+
+<!-- ui -->
+
+<div id="divUI">
+
+	<label><b>Image Characterizer</b></label>
+	<p>Load a file, specify a background color, and click the button to automatically split into lines and characters.</p>
+
+	<div>
+		<label>Image to Find Characters in:</label>
+		<input type="file" onchange="UiEventHandlers.inputImageToCharacterize_Changed(this);"></input>
+		<div id="divDisplayImageToCharacterize">[none]</div>
+	</div>
+
+	<div>
+		</div>
+			<label>Background Color RGB:</label>
+			<input id="inputColorBackground" value="255,255,255"></input>
+		</div>
+		<div>
+			<label>Color Difference to Ingore per Pixel Threshold:</label>
+			<input id="inputPixelDifferenceThreshold" type="number" value="256"></input>
+		</div>
+		<div>
+			<label>Number of Pixels Allowed to Violate Threshold:</label>
+			<input id="inputpixelsAllowedToViolateThreshold" type="number" value="0"></input>
+		</div>
+		<button onclick="UiEventHandlers.buttonImageCharacterize_Clicked();">Find Characters</button>
+	</div>
+
+	<div>
+		<label>Image with Characters Highlighted:</label>
+		<button onclick="UiEventHandlers.buttonImageCharacterizedClear_Clicked();">Clear</button>
+		<div id="divDisplayImageCharacterized">[none]</div>
+	</div>
+
+</div>
+
+<!-- ui ends-->
+
+<script type="text/javascript" src="Box.js"></script>
+<script type="text/javascript" src="Coords.js"></script>
+<script type="text/javascript" src="ImageAutoCharacterizer.js"></script>
+<script type="text/javascript" src="Line.js"></script>
+<script type="text/javascript" src="UiEventHandlers.js"></script>
+
+</body>
+</html>
