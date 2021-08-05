@@ -3,8 +3,8 @@ class Coords
 {
 	constructor(x, y)
 	{
-		this.x = x;
-		this.y = y;
+		this.x = x || 0;
+		this.y = y || 0;
 	}
 
 	clone()
@@ -27,6 +27,14 @@ class Coords
 		{
 			this.y = valueToSet;
 		}
+
+		return this;
+	}
+
+	overwriteWith(other)
+	{
+		this.x = other.x;
+		this.y = other.y;
 
 		return this;
 	}

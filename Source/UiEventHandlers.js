@@ -4,22 +4,17 @@ class UiEventHandlers
 	static buttonImageCharacterize_Clicked()
 	{
 		var d = document;
-		var divDisplayImageToCharacterize =
-			d.getElementById("divDisplayImageToCharacterize");
+		var divDisplayImage =
+			d.getElementById("divDisplayImage");
 
 		var imageToCharacterizeAsCanvas =
-			divDisplayImageToCharacterize.getElementsByTagName("canvas")[0];
+			divDisplayImage.getElementsByTagName("canvas")[0];
 
 		if (imageToCharacterizeAsCanvas == null)
 		{
 			alert("No image loaded!");
 			return;
 		}
-
-		var divDisplayImageCharacterized =
-			d.getElementById("divDisplayImageCharacterized");
-		divDisplayImageCharacterized.innerHTML = "";
-
 		var inputColorBackground =
 			d.getElementById("inputColorBackground");
 		var inputPixelDifferenceThreshold =
@@ -33,28 +28,34 @@ class UiEventHandlers
 		var pixelDifferenceMax = inputPixelDifferenceThreshold.value;
 		var pixelsAllowedToViolateThreshold = inputpixelsAllowedToViolateThreshold.value;
 
-		var characterizer = new ImageAutoCharacterizer();
-		var imageCharacterizedAsCanvas = characterizer.findCharactersInCanvas
+		var characterizer = new ImageAutoCharacterizer
 		(
 			imageToCharacterizeAsCanvas,
 			colorBackgroundRGB,
 			pixelDifferenceMax,
 			pixelsAllowedToViolateThreshold
 		);
-		imageCharacterizedAsCanvas.style = "border:1px solid";
 
-		divDisplayImageCharacterized.appendChild(imageCharacterizedAsCanvas);
+		Globals.Instance().characterizer = characterizer;
+
+		characterizer.boxesForWordsCalculate();
+
+		var imageCharacterizedAsCanvas = characterizer.toCanvas();
+
+		var divDisplayImage =
+			d.getElementById("divDisplayImage");
+		divDisplayImage.innerHTML = "";
+		divDisplayImage.appendChild(imageCharacterizedAsCanvas);
 	}
 
-	static buttonImageCharacterizedClear_Clicked()
+	static buttonImageClear_Clicked()
 	{
 		var d = document;
-		var divDisplayImageCharacterized = d.getElementById
+		var divDisplayImage = d.getElementById
 		(
-			"divDisplayImageCharacterized"
+			"divDisplayImage"
 		);
-
-		divDisplayImageCharacterized.innerHTML = "";
+		divDisplayImage.innerHTML = "";
 	}
 
 	static inputImageToCharacterize_Changed(input)
@@ -80,8 +81,8 @@ class UiEventHandlers
 
 				imageAsCanvas.onmousedown = (mouseEvent) =>
 				{
-					var x = mouseEvent.x;
-					var y = mouseEvent.y;
+					var x = mouseEvent.offsetX;
+					var y = mouseEvent.offsetY;
 
 					var pixelRGBA = graphics.getImageData
 					(
@@ -99,12 +100,12 @@ class UiEventHandlers
 					inputColorBackground.value = pixelAsString;
 				}
 
-				var divDisplayImageToCharacterize = d.getElementById
+				var divDisplayImage = d.getElementById
 				(
-					"divDisplayImageToCharacterize"
+					"divDisplayImage"
 				);
-				divDisplayImageToCharacterize.innerHTML = "";
-				divDisplayImageToCharacterize.appendChild
+				divDisplayImage.innerHTML = "";
+				divDisplayImage.appendChild
 				(
 					imageAsCanvas
 				);

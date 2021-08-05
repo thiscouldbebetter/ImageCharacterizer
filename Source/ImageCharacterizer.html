@@ -6,13 +6,7 @@
 <div id="divUI">
 
 	<label><b>Image Characterizer</b></label>
-	<p>Load a file, specify a background color, and click the button to automatically split into lines and characters.</p>
-
-	<div>
-		<label>Image to Find Characters in:</label>
-		<input type="file" onchange="UiEventHandlers.inputImageToCharacterize_Changed(this);"></input>
-		<div id="divDisplayImageToCharacterize">[none]</div>
-	</div>
+	<p>Load an image of text, click anywhere in it to specify a background color, click the Find Words button to automatically split it into words.  Then click on the boxes containing words to view them individually.</p>
 
 	<div>
 		</div>
@@ -27,13 +21,29 @@
 			<label>Number of Pixels Allowed to Violate Threshold:</label>
 			<input id="inputpixelsAllowedToViolateThreshold" type="number" value="0"></input>
 		</div>
-		<button onclick="UiEventHandlers.buttonImageCharacterize_Clicked();">Find Characters</button>
+		<button onclick="UiEventHandlers.buttonImageCharacterize_Clicked();">Find Words</button>
 	</div>
 
 	<div>
-		<label>Image with Characters Highlighted:</label>
-		<button onclick="UiEventHandlers.buttonImageCharacterizedClear_Clicked();">Clear</button>
-		<div id="divDisplayImageCharacterized">[none]</div>
+		<label>Box Selected:</label>
+		<button onclick="Globals.Instance().characterizer.boxSelectPrev();">Prev</button>
+		<button onclick="Globals.Instance().characterizer.boxSelectNext();">Next</button>
+		<br />
+
+		<label>Image:</label><br />
+		<div id="divBoxSelected">[none]</div>
+
+		<label>Text in Box:</label><br />
+		<input id="inputTextInBoxSelected"></input>
+		<button onclick="Globals.Instance().characterizer.splitBoxSelectedByCharsSpecified();">Split Word by Chars Specified</button>
+	</div>
+
+	<div>
+		<label>Passage as Image:</label>
+		<input type="file" onchange="UiEventHandlers.inputImageToCharacterize_Changed(this);"></input>
+		<button onclick="UiEventHandlers.buttonImageClear_Clicked();">Clear</button>
+		<br />
+		<div id="divDisplayImage">[none]</div>
 	</div>
 
 </div>
@@ -42,6 +52,7 @@
 
 <script type="text/javascript" src="Box.js"></script>
 <script type="text/javascript" src="Coords.js"></script>
+<script type="text/javascript" src="Globals.js"></script>
 <script type="text/javascript" src="ImageAutoCharacterizer.js"></script>
 <script type="text/javascript" src="Line.js"></script>
 <script type="text/javascript" src="UiEventHandlers.js"></script>

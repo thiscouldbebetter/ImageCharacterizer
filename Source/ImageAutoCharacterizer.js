@@ -1,46 +1,196 @@
 
 class ImageAutoCharacterizer
 {
-	findCharactersInCanvas
+	constructor
 	(
-		imageToFindCharactersInAsCanvas,
+		imageToCharacterizeAsCanvas,
 		colorBackgroundRGB,
 		pixelDifferenceMax,
 		pixelsAllowedToViolateThreshold
 	)
 	{
+		this.imageToCharacterizeAsCanvas = imageToCharacterizeAsCanvas;
+		this.colorBackgroundRGB = colorBackgroundRGB;
+		this.pixelDifferenceMax = pixelDifferenceMax;
+		this.pixelsAllowedToViolateThreshold = pixelsAllowedToViolateThreshold;
+
+		this.boxSelected = null;
+	}
+
+	static default()
+	{
+		return new ImageAutoCharacterizer();
+	}
+
+	imageSize()
+	{
+		var returnValue = new Coords
+		(
+			this.imageToCharacterizeAsCanvas.width,
+			this.imageToCharacterizeAsCanvas.height
+		);
+
+		return returnValue;
+	}
+
+	toCanvas()
+	{
 		// Draw the image itself.
 
 		var d = document;
 
-		var imageCharacterizedAsCanvas = d.createElement("canvas");
+		var imageSize = this.imageSize();
 
-		var imageSize = new Coords
-		(
-			imageToFindCharactersInAsCanvas.width,
-			imageToFindCharactersInAsCanvas.height
-		);
+		var imageCharacterizedAsCanvas =
+			d.createElement("canvas");
 
 		imageCharacterizedAsCanvas.width = imageSize.x;
 		imageCharacterizedAsCanvas.height = imageSize.y;
+		imageCharacterizedAsCanvas.style = "border:1px solid";
 
-		var graphics = imageCharacterizedAsCanvas.getContext("2d");
-		graphics.drawImage
+		var imageCharacterizedAsGraphics = imageCharacterizedAsCanvas.getContext("2d");
+
+		var characterizer = this;
+
+		imageCharacterizedAsCanvas.onmousedown = (mouseEvent) =>
+		{
+			var clickPos = new Coords
+			(
+				mouseEvent.offsetX, mouseEvent.offsetY
+			);
+			var boxContainingClick = characterizer.boxesForWords.filter
+			(
+				box => box.containsPoint(clickPos)
+			)[0];
+			if (boxContainingClick != null)
+			{
+				this.boxSelect(boxContainingClick);
+			}
+		};
+
+		imageCharacterizedAsGraphics.drawImage
 		(
-			imageToFindCharactersInAsCanvas,
+			this.imageToCharacterizeAsCanvas,
 			0, 0
 		);
 
+		// Draw everything.
+
+		imageCharacterizedAsGraphics.strokeStyle = "Cyan";
+
+		for (var i = 0; i < this.boxesForWords.length; i++)
+		{
+			var box = this.boxesForWords[i];
+			box.drawToGraphics(imageCharacterizedAsGraphics);
+		}
+
+		this.imageCharacterizedAsCanvas = imageCharacterizedAsCanvas;
+
+		return this.imageCharacterizedAsCanvas;
+	}
+
+	boxSelect(boxToSelect)
+	{
+		this.boxSelected = boxToSelect;
+		var boxContentsAsCanvas = this.boxSelected.toCanvas
+		(
+			this.imageToCharacterizeAsCanvas
+		);
+
+		var d = document;
+		var divBoxSelected = d.getElementById("divBoxSelected");
+		divBoxSelected.innerHTML = "";
+		divBoxSelected.appendChild(boxContentsAsCanvas);
+	}
+
+	boxSelectNext()
+	{
+		var boxToSelectIndex = this.boxSelectedIndex();
+
+		if (boxToSelectIndex == null)
+		{
+			boxToSelectIndex = 0;
+		}
+		else
+		{
+			boxToSelectIndex++;
+			if (boxToSelectIndex > this.boxesForWords.length)
+			{
+				boxToSelectIndex = 0;
+			}
+		}
+
+		var boxToSelect = this.boxesForWords[boxToSelectIndex];
+		this.boxSelect(boxToSelect);
+	}
+
+	boxSelectPrev()
+	{
+		var boxToSelectIndex = this.boxSelectedIndex();
+
+		if (boxToSelectIndex == null)
+		{
+			boxToSelectIndex = this.boxesForWords.length - 1;
+		}
+		else
+		{
+			boxToSelectIndex--;
+			if (boxToSelectIndex < 0)
+			{
+				boxToSelectIndex = this.boxesForWords.length - 1;
+			}
+		}
+
+		var boxToSelect = this.boxesForWords[boxToSelectIndex];
+		this.boxSelect(boxToSelect);
+	}
+
+	boxSelectedIndex()
+	{
+		var returnValue =
+		(
+			this.boxSelected == null
+			? null
+			: this.boxesForWords.indexOf(this.boxSelected)
+		);
+		return returnValue;
+	}
+
+	boxesForWordsCalculate()
+	{
+		var imageToCharacterizeAsGraphics =
+			this.imageToCharacterizeAsCanvas.getContext("2d");
+
+		var imageSize = this.imageSize();
+
+		var lines = this.boxesForWordsCalculate_1_Lines
+		(
+			imageToCharacterizeAsGraphics, imageSize
+		);
+
+		this.boxesForWords = this.boxesForWordsCalculate_2_Boxes
+		(
+			imageToCharacterizeAsGraphics, imageSize, lines
+		);
+
+		return this.boxesForWords;
+	}
+
+	boxesForWordsCalculate_1_Lines
+	(
+		imageToCharacterizeAsGraphics, imageSize
+	)
+	{
 		// Locate the spaces between lines of text.
 
-		var spacesBetweenLinesOfText = this.findSpacesInCanvasInBox
+		var imageBoundsAsBox = new Box(new Coords(0, 0), imageSize);
+
+		var spacesBetweenLinesOfText = this.findSpacesForGraphicsInBox
 		(
-			imageToFindCharactersInAsCanvas,
-			new Box(new Coords(0, 0), imageSize),
+			this.imageToCharacterizeAsCanvas,
+			imageToCharacterizeAsGraphics,
+			imageBoundsAsBox,
 			1, // spaceDimensionInPixelsMin
-			colorBackgroundRGB,
-			pixelDifferenceMax,
-			pixelsAllowedToViolateThreshold,
 			1 // axisI = y
 		);
 
@@ -48,26 +198,33 @@ class ImageAutoCharacterizer
 
 		//lines.push(...spacesBetweenLinesOfText);
 
+		var lineBoundsAsBox = new Box(new Coords(), new Coords());
 		for (var i = 0; i < spacesBetweenLinesOfText.length - 1; i++)
 		{
 			var lineTop = spacesBetweenLinesOfText[i];
 			var lineBottom = spacesBetweenLinesOfText[i + 1];
+			lineBoundsAsBox.min.overwriteWith(lineTop.fromPos);
+			lineBoundsAsBox.max.overwriteWith(lineBottom.toPos);
 
-			var spacesBetweenCharactersInLine = this.findSpacesInCanvasInBox
+			var spacesBetweenCharactersInLine = this.findSpacesForGraphicsInBox
 			(
-				imageToFindCharactersInAsCanvas,
-				new Box(lineTop.fromPos, lineBottom.toPos),
-				1, // spaceDimensionInPixelsMin
-				colorBackgroundRGB,
-				pixelDifferenceMax,
-				pixelsAllowedToViolateThreshold,
+				this.imageToCharacterizeAsCanvas,
+				imageToCharacterizeAsGraphics,
+				lineBoundsAsBox,
+				3, // spaceDimensionInPixelsMin
 				0 // axisI = x
 			);
 
 			lines.push(...spacesBetweenCharactersInLine);
 		}
 
+		return lines;
+	}
+
+	boxesForWordsCalculate_2_Boxes(imageToCharacterizeAsGraphics, imageSize, lines)
+	{
 		// Convert the lines to boxes.
+
 		var boxes = Box.manyFromLines(lines);
 
 		// Remove any empty boxes.
@@ -77,36 +234,33 @@ class ImageAutoCharacterizer
 		var boxesNotEmpty = boxes.filter
 		(
 			box => this.countPixelsInBoxViolatingDifferenceMax(
-				box, pixelDifferenceMax, graphics, colorBackgroundRGB
+				box, imageToCharacterizeAsGraphics
 			) > pixelsMaxForBoxToBeConsideredEmpty
 		);
 
-		// Draw everything.
+		var boxesSorted = boxesNotEmpty.sort
+		(
+			(a, b) =>
+			{
+				var returnValue =
+					(a.min.y * imageSize.x + a.min.x)
+					- (b.min.y * imageSize.x + b.min.x);
+				return returnValue;
+			}
+		);
 
-		graphics.strokeStyle = "Cyan";
-
-		for (var i = 0; i < boxesNotEmpty.length; i++)
-		{
-			var box = boxesNotEmpty[i];
-			box.drawToGraphics(graphics);
-		}
-
-		return imageCharacterizedAsCanvas;
+		return boxesSorted;
 	}
 
-	findSpacesInCanvasInBox
+	findSpacesForGraphicsInBox
 	(
 		imageToSplitAsCanvas,
+		imageToSplitAsGraphics,
 		box,
 		spaceDimensionInPixelsMin,
-		colorBackgroundRGB,
-		pixelDifferenceMax,
-		pixelsAllowedToViolateThreshold,
 		axisI
 	)
 	{
-		var graphics = imageToSplitAsCanvas.getContext("2d");
-
 		var imageToSplitSize = new Coords
 		(
 			imageToSplitAsCanvas.width,
@@ -147,20 +301,19 @@ class ImageAutoCharacterizer
 					pixelPos.dimensionSet(axisJ, j);
 
 					var pixelDifference =
-						this.pixelDifference
+						this.pixelDifferenceFromBackground
 						(
-							graphics,
-							colorBackgroundRGB,
+							imageToSplitAsGraphics,
 							pixelPos
 						);
 
 					var isPixelWithinThreshold =
-						(pixelDifference <= pixelDifferenceMax);
+						(pixelDifference <= this.pixelDifferenceMax);
 
 					if (isPixelWithinThreshold == false)
 					{
 						pixelsOutsideThresholdOnLine++;
-						if (pixelsOutsideThresholdOnLine > pixelsAllowedToViolateThreshold)
+						if (pixelsOutsideThresholdOnLine > this.pixelsAllowedToViolateThreshold)
 						{
 							isLineOpen = false;
 							break;
@@ -257,10 +410,7 @@ class ImageAutoCharacterizer
 		return linesForSpaces;
 	}
 
-	countPixelsInBoxViolatingDifferenceMax
-	(
-		box, differenceMax, graphics, colorBackgroundRGB
-	)
+	countPixelsInBoxViolatingDifferenceMax(box, graphics)
 	{
 		var numberOfPixelsViolatingDifferenceMaxSoFar = 0;
 
@@ -276,12 +426,12 @@ class ImageAutoCharacterizer
 			{
 				pixelPos.x = x;
 
-				var pixelDifference = this.pixelDifference
+				var pixelDifference = this.pixelDifferenceFromBackground
 				(
-					graphics, colorBackgroundRGB, pixelPos
+					graphics, pixelPos
 				);
 
-				if (pixelDifference > differenceMax)
+				if (pixelDifference > this.pixelDifferenceMax)
 				{
 					numberOfPixelsViolatingDifferenceMaxSoFar++;
 				}
@@ -291,12 +441,7 @@ class ImageAutoCharacterizer
 		return numberOfPixelsViolatingDifferenceMaxSoFar;
 	}
 
-	pixelDifference
-	(
-		graphics,
-		colorBackgroundRGB,
-		pixelPos
-	)
+	pixelDifferenceFromBackground(graphics, pixelPos)
 	{
 		var pixelRGB = graphics.getImageData
 		(
@@ -310,7 +455,7 @@ class ImageAutoCharacterizer
 		{
 			var componentDifference = Math.abs
 			(
-				pixelRGB[c] - colorBackgroundRGB[c]
+				pixelRGB[c] - this.colorBackgroundRGB[c]
 			);
 			pixelDifference += componentDifference;
 		}
@@ -318,4 +463,40 @@ class ImageAutoCharacterizer
 		return pixelDifference;
 	}
 
+	splitBoxSelectedByCharsSpecified()
+	{
+		var charWidthsAsFractionsOfWhole = [];
+
+		var d = document;
+
+		var inputTextInBoxSelected =
+			d.getElementById("inputTextInBoxSelected");
+
+		var textInBoxSelected = inputTextInBoxSelected.value;
+
+		var boxSelected = this.boxSelected;
+
+		boxSelected.textSelected = textInBoxSelected;
+
+		var graphics =
+			this.imageToCharacterizeAsCanvas.getContext("2d");
+
+		var widthOfWhole = graphics.measureText(textInBoxSelected).width;
+
+		for (var i = 0; i < textInBoxSelected.length; i++)
+		{
+			var char = textInBoxSelected[i];
+			var widthOfCharSingle = graphics.measureText(char).width;
+			var charWidthAsFractionOfWhole =
+				widthOfCharSingle / widthOfWhole;
+			charWidthsAsFractionsOfWhole.push(charWidthAsFractionOfWhole);
+		}
+
+		boxSelected.charWidthsAsFractionsOfWhole =
+			charWidthsAsFractionsOfWhole;
+
+		var imageCharacterizedAsGraphics =
+			this.imageCharacterizedAsCanvas.getContext("2d");
+		boxSelected.drawToGraphics(imageCharacterizedAsGraphics);
+	}
 }
